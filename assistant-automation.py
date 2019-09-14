@@ -5,6 +5,7 @@ import time
 import requests
 import bs4
 import random
+import urllib
 from selenium import webdriver
 import speech_recognition as sr
 from selenium.webdriver.common.keys import Keys
@@ -25,12 +26,12 @@ def talk(audio):
 
 # listen to command
 def myCommand():
-    print("Starting assistant..........")
+ 
     #initialize the recognizer
     r=sr.Recognizer()
 
     with sr.Microphone() as source:
-        print("Kenneth your assistant is ready ")
+        print("ready")
         r.pause_threshold=1
         #allow the recognizer a second to adjust the energy threshold based on the surrounding noise level
         r.adjust_for_ambient_noise(source,duration=1)
@@ -72,7 +73,7 @@ def getPhrases():
 
     for phrase in content:
     
-        errorPhrases.append(phrase.get_text())
+        errorPhrases.append(phrase.get_text().split("-")[0])
       
 
     #print(errorPhrases)
@@ -84,21 +85,22 @@ def assistant(command):
     print("here "+command)
     if 'hello' in command:
         talk("Hello Kenneth ,whats up?");
-        time.sleep(5)
+       
  
     elif 'open google and search' in command:
         reg_ex=re.search('open google and search (.*)',command)
-        search_for=command.split("Search",1)[1]
+        search_for=command.split("search",1)[1]
         url='https://www.google.com/'
         if reg_ex:
             subgoogle=reg_ex.group(1)
             url=url +'r/' +subgoogle
         talk('Okay!')
+
         driver=webdriver.Chrome("/usr/lib/chromium-browser/chromedriver")
         driver.get('https://www.google.com')
         search=driver.find_element_by_name('q')
         search.send_keys(str(search_for))
-        search.send_keys(keys.RETURN)
+        search.send_keys(Keys.RETURN)
     elif 'open google' in command:
         #matching command to check it is availabble
         reg_ex=re.search('open google (.*)',command)
@@ -108,13 +110,26 @@ def assistant(command):
             url=url+'r/'+subgoogle
         webbrowser.open(url)
         print('done!')
+    elif 'youtube' in command:
+        talk('okay!');
+        reg_ex = re.search('youtube (.+)', command)
+        if reg_ex:
+            domain = command.split("youtube",1)[1] 
+            query_string = urllib.parse.urlencode({"search_query" : domain})
+            html_content = urllib.request.urlopen("http://www.youtube.com/results?" + query_string) 
+            search_results = re.findall(r'href=\"\/watch\?v=(.{11})', html_content.read().decode()) # finds all links in search result
+            webbrowser.open("http://www.youtube.com/watch?v={}".format(search_results[0]))
+            pass
+    
+    
     else:
         error=random.choice(errors)
-        talk(error)
-        time.sleep(5)
+        talk(error.split("-")[0])
+    
 
 
 while True:
+    time.sleep(5)
     command=myCommand()
     assistant(command)
 
